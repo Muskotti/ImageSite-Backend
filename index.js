@@ -7,6 +7,7 @@ app.use(bodyParser.json());
 
 app.use(cors());
 
+// ToDo: make proper database
 var data = [
   {
     id: 0,
@@ -38,18 +39,43 @@ var comments = [
   }
 ]
 
+/**
+ * Gets the current posts from datababe
+ */
 app.get('/posts', function (req, res) {
   res.send(data)
 })
 
+// ToDo: get comments pased on id
 app.get('/posts/0', function (req, res) {
   res.send(comments[0])
 })
 
+/**
+ * Sends the new post to database and respoces with the given body
+ */
 app.post('/posts', function (req, res) {
+  data.push(req.body)
   res.send(req.body)
 })
 
+// ToDo: add comments pased on id
+app.post('/posts/0', function (req, res) {
+  console.log(req.body)
+  for(let item in comments) {
+    console.log(comments[item].id)
+    if(comments[item].id === req.body.id) {
+      console.log('toimi')
+      comments[item].comments.push(req.body.text)
+    }
+  }
+  
+  res.send(req.body)
+})
+
+/**
+ * starts the server
+ */
 var server = app.listen(3000, function () {
   console.log('Server listening in http://localhost:3000/')
 })
