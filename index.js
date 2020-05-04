@@ -46,9 +46,21 @@ app.get('/posts', function (req, res) {
   res.send(data)
 })
 
-// ToDo: get comments pased on id
-app.get('/posts/0', function (req, res) {
-  res.send(comments[0])
+/**
+ * Gets comments pased on id
+ */
+app.get('/posts/:id([0-9]+)', function (req, res) {
+  res.send(comments[req.params.id])
+})
+
+/**
+ * Gets the lenght of the data array
+ */
+app.get('/posts/last', function (req, res) {
+  var msg = {
+    lenght: data.length
+  }
+  res.send(msg)
 })
 
 /**
@@ -59,13 +71,12 @@ app.post('/posts', function (req, res) {
   res.send(req.body)
 })
 
-// ToDo: add comments pased on id
-app.post('/posts/0', function (req, res) {
-  console.log(req.body)
+/**
+ * Adds new comment to a post pased on id
+ */
+app.post('/posts/:id([0-9]+)', function (req, res) {
   for(let item in comments) {
-    console.log(comments[item].id)
     if(comments[item].id === req.body.id) {
-      console.log('toimi')
       comments[item].comments.push(req.body.text)
     }
   }
