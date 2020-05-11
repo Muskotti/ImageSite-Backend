@@ -39,6 +39,13 @@ var comments = [
   }
 ]
 
+var users = [
+  {
+    username: 'Jaska',
+    password: 'Jaska',
+  }
+]
+
 /**
  * Gets the current posts from datababe
  */
@@ -82,6 +89,19 @@ app.post('/posts/:id([0-9]+)', function (req, res) {
   }
   
   res.send(req.body)
+})
+
+/**
+ * Login validation
+ */
+app.post('/login', function (req, res) {
+  let result = false
+  for(let item of users) {
+    if(item.username === req.body.username && item.password === req.body.password) {
+      result = true
+    }
+  }
+  res.send(result)
 })
 
 /**
