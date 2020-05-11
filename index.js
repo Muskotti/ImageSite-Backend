@@ -129,7 +129,6 @@ app.post('/register', function (req, res) {
  * Changes password
  */
 app.post('/profile/:username(*)', function (req, res) {
-  console.log(req.params)
   let profile = null;
   for(let item of users) {
     if(item.username === req.params.username) {
@@ -137,7 +136,6 @@ app.post('/profile/:username(*)', function (req, res) {
       profile = item
     }
   }
-  console.log(users)
   res.send(profile)
 })
 
