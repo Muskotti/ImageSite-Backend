@@ -105,6 +105,14 @@ app.post('/login', function (req, res) {
 })
 
 /**
+ * Registeration validation
+ */
+app.post('/register', function (req, res) {
+  users.push(req.body)
+  res.send(true)
+})
+
+/**
  * starts the server
  */
 var server = app.listen(3000, function () {
