@@ -61,6 +61,19 @@ app.get('/posts/:id([0-9]+)', function (req, res) {
 })
 
 /**
+ * Gets profile passed on username
+ */
+app.get('/profile/:username(*)', function (req, res) {
+  let profile = null;
+  for(let item of users) {
+    if(item.username === req.params.username) {
+      profile = item
+    }
+  }
+  res.send(profile)
+})
+
+/**
  * Gets the lenght of the data array
  */
 app.get('/posts/last', function (req, res) {
@@ -110,6 +123,22 @@ app.post('/login', function (req, res) {
 app.post('/register', function (req, res) {
   users.push(req.body)
   res.send(true)
+})
+
+/**
+ * Changes password
+ */
+app.post('/profile/:username(*)', function (req, res) {
+  console.log(req.params)
+  let profile = null;
+  for(let item of users) {
+    if(item.username === req.params.username) {
+      item.password = req.body.password
+      profile = item
+    }
+  }
+  console.log(users)
+  res.send(profile)
 })
 
 /**
