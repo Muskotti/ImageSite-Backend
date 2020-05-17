@@ -3,7 +3,11 @@ var express = require('express')
 var cors = require('cors');
 var app = express()
 var bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
 app.use(bodyParser.json());
+
+var flatfile = require('flat-file-db');
+var db = flatfile('./tmp/mydatabase.db');
 
 app.use(cors());
 
@@ -28,6 +32,8 @@ var data = [
   },
 ]
 
+db.put(0, { data })
+
 var comments = [
   {
     id: 0,
@@ -39,25 +45,31 @@ var comments = [
   }
 ]
 
+db.put(1, { comments })
+
 var users = [
   {
     username: 'Jaska',
     password: 'Jaska',
+    token: '',
   }
 ]
+
+db.put(2, { users })
 
 /**
  * Gets the current posts from datababe
  */
 app.get('/posts', function (req, res) {
-  res.send(data)
+  res.send(db.get(0))
 })
 
 /**
  * Gets comments pased on id
  */
 app.get('/posts/:id([0-9]+)', function (req, res) {
-  res.send(comments[req.params.id])
+  const com = db.get(1)
+  res.send(com.comments[req.params.id])
 })
 
 /**
@@ -65,8 +77,8 @@ app.get('/posts/:id([0-9]+)', function (req, res) {
  */
 app.get('/profile/:username(*)', function (req, res) {
   let profile = null;
-  for(let item of users) {
-    if(item.username === req.params.username) {
+  for (let item of db.get(2).users) {
+    if (item.username === req.params.username) {
       profile = item
     }
   }
@@ -77,8 +89,13 @@ app.get('/profile/:username(*)', function (req, res) {
  * Gets the lenght of the data array
  */
 app.get('/posts/last', function (req, res) {
+  const tmp = db.get(0).data
+  let len = 0;
+  for (let item of tmp) {
+    len++
+  }
   var msg = {
-    lenght: data.length
+    lenght: len
   }
   res.send(msg)
 })
@@ -87,7 +104,20 @@ app.get('/posts/last', function (req, res) {
  * Sends the new post to database and respoces with the given body
  */
 app.post('/posts', function (req, res) {
-  data.push(req.body)
+
+  const all = db.get(0)
+  all.data.push(req.body)
+  const data = all.data
+  db.put(0, { data })
+
+  const cmt = db.get(1)
+  cmt.comments.push({
+    id: req.body.id,
+    comments: []
+  })
+  const comments = cmt.comments
+  db.put(1, { comments })
+
   res.send(req.body)
 })
 
@@ -95,12 +125,18 @@ app.post('/posts', function (req, res) {
  * Adds new comment to a post pased on id
  */
 app.post('/posts/:id([0-9]+)', function (req, res) {
-  for(let item in comments) {
-    if(comments[item].id === req.body.id) {
-      comments[item].comments.push(req.body.text)
+  const tmp = db.get(1)
+  const newCmt = []
+  for (let item of tmp.comments) {
+    if (item.id === req.body.id) {
+      item.comments.push(req.body.text)
     }
+    newCmt.push(item)
   }
-  
+
+  const comments = newCmt
+  db.put(1, { comments })
+
   res.send(req.body)
 })
 
@@ -108,21 +144,62 @@ app.post('/posts/:id([0-9]+)', function (req, res) {
  * Login validation
  */
 app.post('/login', function (req, res) {
-  let result = false
-  for(let item of users) {
-    if(item.username === req.body.username && item.password === req.body.password) {
-      result = true
+  const list = db.get(2)
+  let result = null
+  let newUsers = []
+  for (let item of list.users) {
+    if (item.username === req.body.username && item.password === req.body.password) {
+      const token = jwt.sign({ username: item.username }, 'RANDOM_TOKEN_SECRET', { expiresIn: '24h' });
+      item.token = token
+      result = token;
+    }
+    newUsers.push(item)
+  }
+
+  const users = newUsers
+  db.put(2, { users })
+
+  res.status(200).json({
+    token: result
+  })
+})
+
+/**
+ * Relogin validation
+ */
+app.post('/relogin', function (req, res) {
+  const list = db.get(2)
+  let result = null
+  for (let item of list.users) {
+    if (item.token === req.body.token) {
+      result = item.token
     }
   }
-  res.send(result)
+
+  res.status(200).json({
+    token: result
+  })
 })
 
 /**
  * Registeration validation
  */
 app.post('/register', function (req, res) {
-  users.push(req.body)
-  res.send(true)
+  const tmp = {
+    username: req.body.username,
+    password: req.body.password,
+    token: jwt.sign({ username: req.body.username }, 'RANDOM_TOKEN_SECRET', { expiresIn: '24h' })
+  }
+
+  let list = db.get(2)
+  list.users.push(tmp)
+
+  const users = list.users
+  db.put(2, { users })
+  
+  res.status(200).json({
+    token: tmp.token
+  })
 })
 
 /**
@@ -130,8 +207,8 @@ app.post('/register', function (req, res) {
  */
 app.post('/profile/:username(*)', function (req, res) {
   let profile = null;
-  for(let item of users) {
-    if(item.username === req.params.username) {
+  for (let item of users) {
+    if (item.username === req.params.username) {
       item.password = req.body.password
       profile = item
     }
